@@ -1,0 +1,6 @@
+C:\Users\Даниел\Documents\GitHub\MiniORM\MiniORM\bin\Debug\MiniORM.exe.config
+C:\Users\Даниел\Documents\GitHub\MiniORM\MiniORM\bin\Debug\MiniORM.exe
+C:\Users\Даниел\Documents\GitHub\MiniORM\MiniORM\bin\Debug\MiniORM.pdb
+C:\Users\Даниел\Documents\GitHub\MiniORM\MiniORM\obj\Debug\MiniORM.csprojResolveAssemblyReference.cache
+C:\Users\Даниел\Documents\GitHub\MiniORM\MiniORM\obj\Debug\MiniORM.exe
+C:\Users\Даниел\Documents\GitHub\MiniORM\MiniORM\obj\Debug\MiniORM.pdb
