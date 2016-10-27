@@ -44,26 +44,46 @@
 
             if (id <= 0)
             {
-                return this.Insert(entityType, idInfo);
+                return this.Insert(entity, idInfo);
             }
 
-            return this.Update(entityType, idInfo);
+            return this.Update(entity, idInfo);
         }
 
-        private bool Update(Type entityType, FieldInfo idInfo)
+        // TODO: UPDATE METHOD
+        private bool Update(Object entity, FieldInfo idInfo)
         {
             int numberOfAffectedRows = 0;
+            string updateString = PrepareTableUpdateString(entity);
 
-            // TODO
+            using (connection = new SqlConnection(this.connectionString))
+            {
+                this.connection.Open();
+                SqlCommand command = new SqlCommand(updateString, this.connection);
+                numberOfAffectedRows = command.ExecuteNonQuery();
+            }
 
             return numberOfAffectedRows > 0;
         }
-
-        private bool Insert(Type entityType, FieldInfo idInfo)
+        
+        private bool Insert(Object entity, FieldInfo idInfo)
         {
             int numberOfAffectedRows = 0;
+            string insertIntoString = PrepareTableInsertionString(entity);
 
-            // TODO
+            using (connection = new SqlConnection(this.connectionString))
+            {
+                this.connection.Open();
+                SqlCommand command = new SqlCommand(insertIntoString, this.connection);
+                numberOfAffectedRows = command.ExecuteNonQuery();
+
+                // Check and set Id
+                string selectMaxIdString = $"SELECT MAX([Id]) " +
+                                           $"FROM {this.GetTableName(entity.GetType())} ";
+                command = new SqlCommand(selectMaxIdString, connection);
+                int id = (int)command.ExecuteScalar();
+                idInfo.SetValue(entity, id);
+            }
 
             return numberOfAffectedRows > 0;
         }
@@ -91,8 +111,7 @@
 
             return false;
         }
-
-        // Reflection
+        
         /// <summary>
         /// Get the field with Id attribute of the given entity. 
         /// If there is no field with Id attribute throw exception.
@@ -185,7 +204,6 @@
             createSQLTable.Append($"Id INT IDENTITY(1, 1) PRIMARY KEY, ");
 
             FieldInfo[] columnInfos = entity.GetFields(BindingFlags.Instance | BindingFlags.NonPublic).Where(x => x.IsDefined(typeof(ColumnAttribute))).ToArray();
-            string[] columnNames = columnInfos.Select(info => info.GetCustomAttribute<ColumnAttribute>().Name).ToArray();
 
             foreach (FieldInfo columnInfo in columnInfos)
             {
@@ -196,6 +214,67 @@
             createSQLTable.Append(" )");
 
             return createSQLTable.ToString();
+        }
+
+        private string PrepareTableUpdateString(Object entity)
+        {
+            StringBuilder updateSQLTable = new StringBuilder();
+            StringBuilder columnNameValueBuilder = new StringBuilder();
+
+            FieldInfo[] columnNames = entity.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic).Where(x => x.IsDefined(typeof(ColumnAttribute))).ToArray();
+
+            foreach (FieldInfo columnName in columnNames)
+            {
+                if (this.GetTypeToDB(columnName) == "INT" || this.GetTypeToDB(columnName) == "BIT")
+                {
+                    columnNameValueBuilder.Append($"[{this.GetFieldName(columnName)}] = {columnName.GetValue(entity)}, ");
+                }
+                else
+                {
+                    columnNameValueBuilder.Append($"[{this.GetFieldName(columnName)}] = '{columnName.GetValue(entity)}', ");
+                }
+            }
+
+            updateSQLTable.Append($"UPDATE {this.GetTableName(entity.GetType())} SET (");
+            columnNameValueBuilder.Remove(columnNameValueBuilder.Length - 2, 2);
+            columnNameValueBuilder.Append(" ) ");
+
+            return updateSQLTable.ToString();
+        }
+
+        private string PrepareTableInsertionString(Object entity)
+        {
+            StringBuilder insertIntoSQLTable = new StringBuilder();
+            StringBuilder columnNamesBuilder = new StringBuilder();
+            StringBuilder valuesBuilder = new StringBuilder();
+
+            FieldInfo[] columnNames = entity.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic).Where(x => x.IsDefined(typeof(ColumnAttribute))).ToArray();
+
+            foreach (FieldInfo columnName in columnNames)
+            {
+                columnNamesBuilder.Append($"{this.GetFieldName(columnName)}, ");
+                if (this.GetTypeToDB(columnName) != "DATETIME")
+                {
+                    valuesBuilder.Append($"'{columnName.GetValue(entity).ToString()}', ");
+                }
+                else // If the Type IS DATETIME add to string by converting
+                {
+                    DateTime datetime = (DateTime)columnName.GetValue(entity);
+                    valuesBuilder.Append($"'{datetime.ToString("yyyy-MM-dd HH:mm:ss")}', ");
+                }
+            }
+
+            columnNamesBuilder.Remove(columnNamesBuilder.Length - 2, 2);
+            columnNamesBuilder.Append(" ) ");
+            valuesBuilder.Remove(valuesBuilder.Length - 2, 2);
+            valuesBuilder.Append(" )");
+
+            insertIntoSQLTable.Append($"INSERT INTO {this.GetTableName(entity.GetType())} ( ");
+            insertIntoSQLTable.Append(columnNamesBuilder.ToString());
+            insertIntoSQLTable.Append($"VALUES ( ");
+            insertIntoSQLTable.Append(valuesBuilder.ToString());
+
+            return insertIntoSQLTable.ToString();
         }
 
         private string GetTypeToDB(FieldInfo field)

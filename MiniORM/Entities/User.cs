@@ -32,12 +32,52 @@
         }
 
         // Properties
-        public string Username { get; set; }
+        public string Username
+        {
+            get
+            {
+                return this.username;
+            }
+            set
+            {
+                this.username = value;
+            }
+        }
 
-        public string Password { get; set; }
+        public string Password
+        {
+            get
+            {
+                return this.password;
+            }
+            set
+            {
+                this.password = value;
+            }
+        }
 
-        public int Age { get; set; }
+        public int Age
+        {
+            get
+            {
+                return this.age;
+            }
+            set
+            {
+                this.age = value;
+            }
+        }
 
-        public DateTime RegistrationDate { get; set; }
+        public DateTime RegistrationDate
+        {
+            get
+            {
+                return this.registrationDate;
+            }
+            set
+            {
+                this.registrationDate = value;
+            }
+        }
     }
 }
