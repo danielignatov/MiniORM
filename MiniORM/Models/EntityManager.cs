@@ -25,7 +25,10 @@
             this.isCodeFirst = isCodeFirst;
         }
 
-        // EntityManager Methods
+        /// <summary>
+        /// Entry method to create table if doesent exist,
+        /// insert and update entity data in database.
+        /// </summary>
         public bool Persist(Object entity)
         {
             if (entity == null)
@@ -49,12 +52,11 @@
 
             return this.Update(entity, idInfo);
         }
-
-        // TODO: UPDATE METHOD
+        
         private bool Update(Object entity, FieldInfo idInfo)
         {
             int numberOfAffectedRows = 0;
-            string updateString = PrepareTableUpdateString(entity);
+            string updateString = PrepareTableUpdateString(entity, idInfo);
 
             using (connection = new SqlConnection(this.connectionString))
             {
@@ -216,7 +218,7 @@
             return createSQLTable.ToString();
         }
 
-        private string PrepareTableUpdateString(Object entity)
+        private string PrepareTableUpdateString(Object entity, FieldInfo idInfo)
         {
             StringBuilder updateSQLTable = new StringBuilder();
             StringBuilder columnNameValueBuilder = new StringBuilder();
@@ -225,19 +227,21 @@
 
             foreach (FieldInfo columnName in columnNames)
             {
-                if (this.GetTypeToDB(columnName) == "INT" || this.GetTypeToDB(columnName) == "BIT")
-                {
-                    columnNameValueBuilder.Append($"[{this.GetFieldName(columnName)}] = {columnName.GetValue(entity)}, ");
-                }
-                else
+                if (this.GetTypeToDB(columnName) != "DATETIME")
                 {
                     columnNameValueBuilder.Append($"[{this.GetFieldName(columnName)}] = '{columnName.GetValue(entity)}', ");
                 }
+                else // If the Type IS DATETIME add to string by converting
+                {
+                    DateTime datetime = (DateTime)columnName.GetValue(entity);
+                    columnNameValueBuilder.Append($"[{this.GetFieldName(columnName)}] = '{datetime.ToString("yyyy-MM-dd HH:mm:ss")}', ");
+                }
             }
 
-            updateSQLTable.Append($"UPDATE {this.GetTableName(entity.GetType())} SET (");
+            updateSQLTable.Append($"UPDATE {this.GetTableName(entity.GetType())} SET ");
             columnNameValueBuilder.Remove(columnNameValueBuilder.Length - 2, 2);
-            columnNameValueBuilder.Append(" ) ");
+            updateSQLTable.Append(columnNameValueBuilder.ToString());
+            updateSQLTable.Append($" WHERE [Id] = '{idInfo.GetValue(entity)}' ;");
 
             return updateSQLTable.ToString();
         }

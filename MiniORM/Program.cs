@@ -3,10 +3,6 @@
     using Core;
     using Entities;
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
 
     class Program
     {
@@ -15,6 +11,9 @@
             User dani = new User("Dani", "Password", 22, DateTime.Now);
             ConnectionStringBuilder builder = new ConnectionStringBuilder("MiniORM");
             EntityManager manager = new EntityManager(builder.ConnectionString, true);
+            manager.Persist(dani);
+
+            dani.Username = "Daniel";
             manager.Persist(dani);
         }
     }
